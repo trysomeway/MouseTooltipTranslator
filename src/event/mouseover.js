@@ -598,9 +598,25 @@ function checkSameRange(range1, range2) {
     range1.endOffset === range2.endOffset
   );
 }
+function elementOffsetToCharOffset(element, childOffset) {
+  // Chrome's range.expand() can set endContainer to an element with a child-node index
+  // as the offset. selectNode() expects a character offset, so convert here.
+  let charLen = 0;
+  let i = 0;
+  for (const child of element.childNodes) {
+    if (i >= childOffset) break;
+    charLen += getNodeLength(child);
+    i++;
+  }
+  return charLen;
+}
+
 function getNextRange(range, offsetIncrement = 1) {
-  const endContainer = range.endContainer;
-  const endOffset = range.endOffset;
+  let endContainer = range.endContainer;
+  let endOffset = range.endOffset;
+  if (endContainer.nodeType !== Node.TEXT_NODE) {
+    endOffset = elementOffsetToCharOffset(endContainer, endOffset);
+  }
   const rangeClone = range.cloneRange();
   const nextNodeAndOffset = getNextNodeAndOffset(endContainer, endOffset + offsetIncrement);
   if (!nextNodeAndOffset) return null;
